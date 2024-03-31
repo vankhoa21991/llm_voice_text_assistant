@@ -1,3 +1,6 @@
+from dotenv import load_dotenv
+load_dotenv()
+import os
 import gradio as gr
 from transformers import pipeline
 from transformers import AutoProcessor, BarkModel
@@ -7,6 +10,8 @@ import numpy as np
 from IPython.display import Audio, display
 import numpy as np
 import re
+import nltk
+nltk.download('punkt')
 from nltk.tokenize import sent_tokenize
 
 
@@ -16,13 +21,13 @@ WORDS_PER_CHUNK = 25
 # Setup Whisper client
 pipe = pipeline(
     "automatic-speech-recognition",
-    model="openai/whisper-large-v2",
+    model="openai/whisper-tiny",
     torch_dtype=torch.float16,
     device="cuda:0"
 )
 
-voice_processor = AutoProcessor.from_pretrained("suno/bark")
-voice_model = BarkModel.from_pretrained("suno/bark", torch_dtype=torch.float16).to("cuda:0")
+voice_processor = AutoProcessor.from_pretrained("suno/bark-small")
+voice_model = BarkModel.from_pretrained("suno/bark-small", torch_dtype=torch.float16).to("cuda:0")
 
 voice_model =  voice_model.to_bettertransformer()
 voice_preset = "v2/en_speaker_9"
@@ -31,15 +36,16 @@ voice_preset = "v2/en_speaker_9"
 system_prompt = "You are a helpful AI. You must answer the questino user asks briefly."
 
 
-client = OpenAI(base_url="http://localhost:8000/v1", api_key="sk-xxx")  # Placeholder, replace 
+client = OpenAI(base_url="http://localhost:8000/v1", api_key=os.environ['OPENAI_KEY'])  # Placeholder, replace 
 sample_rate = 48000
 
 def transcribe_and_query_llm_voice(audio_file_path):
 
     transcription = pipe(audio_file_path)['text']
+    print(f'Transcription: {transcription}')
     
     response = client.chat.completions.create(
-        model="mistral",
+        model="phi-2",
         messages=[
             {"role": "system", "content": system_prompt},  # Update this as per your needs
             {"role": "user", "content": transcription}
@@ -71,12 +77,15 @@ def transcribe_and_query_llm_voice(audio_file_path):
 
     audio_output = (sampling_rate, whole_ouput) 
 
-    return llm_response, audio_output
+    torch.cuda.empty_cache()
+
+    return llm_response, audio_output, transcription
 
 
 def transcribe_and_query_llm_text(text_input):
 
     transcription = text_input
+    print(f'Transcription: {transcription}')
     
     response = client.chat.completions.create(
         model="mistral",
@@ -112,8 +121,9 @@ def transcribe_and_query_llm_text(text_input):
     whole_ouput = np.concatenate(pieces)
 
     audio_output = (sampling_rate, whole_ouput)  
+    torch.cuda.empty_cache()
 
-    return llm_response, audio_output
+    return llm_response, audio_output, transcription
 
 
 
@@ -123,6 +133,7 @@ with gr.Blocks() as demo:
             text_input = gr.Textbox(label="Type your request", placeholder="Type here or use the microphone...")
             audio_input = gr.Audio(sources=["microphone"], type="filepath", label="Or record your speech")
         with gr.Column():
+            transcription = gr.Textbox(label="Transcription")
             output_text = gr.Textbox(label="LLM Response")
             output_audio = gr.Audio(label="LLM Response as Speech", type="numpy")
     
@@ -130,8 +141,8 @@ with gr.Blocks() as demo:
     submit_btn_voice = gr.Button("Submit Voice")
     
 
-    submit_btn_voice.click(fn=transcribe_and_query_llm_voice, inputs=[audio_input], outputs=[output_text, output_audio])
-    submit_btn_text.click(fn=transcribe_and_query_llm_text, inputs=[text_input], outputs=[output_text, output_audio])
+    submit_btn_voice.click(fn=transcribe_and_query_llm_voice, inputs=[audio_input], outputs=[output_text, output_audio, transcription])
+    submit_btn_text.click(fn=transcribe_and_query_llm_text, inputs=[text_input], outputs=[output_text, output_audio, transcription])
 
 demo.launch(ssl_verify=False,
             share=False,
