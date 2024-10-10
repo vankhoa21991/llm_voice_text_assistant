@@ -281,17 +281,19 @@ class ModelHandler:
         self.unload_timer.start()
 
 
-# Example usage
-handler = ModelHandler()
+
 
 if __name__ == "__main__":
+    # Example usage
+    handler = ModelHandler()
+
     # Use text model
-    result = handler.chat_completion("hugging-quants/Llama-3.2-1B-Instruct-Q4_K_M-GGUF", "Tell me a joke")
-    print(result)
+    # result = handler.chat_completion("hugging-quants/Llama-3.2-1B-Instruct-Q4_K_M-GGUF", "Tell me a joke")
+    # print(result)
 
     # Use image model
     image_url = "https://upload.wikimedia.org/wikipedia/commons/thumb/d/dd/Gfp-wisconsin-madison-the-nature-boardwalk.jpg/2560px-Gfp-wisconsin-madison-the-nature-boardwalk.jpg"
-    result = handler.chat_completion("vikhyatk/moondream2", "What's in this image?", image=image_url)
+    result = handler.chat_completion("mys/ggml_llava-v1.5-7b/q4_k", "What's in this image?", image=image_url)
     print(result)
 
     # # Use local model

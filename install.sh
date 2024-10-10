@@ -1,9 +1,3 @@
-#!/bin/bash
-
-# Set environment variables and install the llama-cpp-python package with GPU support
-export CMAKE_ARGS="-DLLAMA_CUBLAS=on"
-export FORCE_CMAKE=1
-pip install --upgrade --force-reinstall llama-cpp-python --no-cache-dir
-
-# Install standard dependencies from requirements.txt
-pip install -r requirements.txt
+cd models
+wget https://huggingface.co/Qwen/Qwen2-0.5B-Instruct-GGUF/resolve/main/qwen2-0_5b-instruct-q8_0.gguf
+wget https://huggingface.co/leliuga/all-MiniLM-L6-v2-GGUF/resolve/main/all-MiniLM-L6-v2.F16.gguf 

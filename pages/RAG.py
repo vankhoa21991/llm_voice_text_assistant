@@ -3,8 +3,8 @@ from dotenv import load_dotenv
 load_dotenv()
 
 import os
-from VirAsst.RAG import ContentCreator
-from VirAsst.llm.llms import model_lists
+from VirAsst.vectorDB import VectorDB
+from VirAsst.vectorDB import embedding_list
 openai_api_key = os.getenv("OPENAI_API_KEY")
 
 def page_rag():
@@ -27,13 +27,16 @@ def page_rag():
 
         """
     )
-                
-        num_web = st.number_input(
-            label="Enter number of web references to use",
-            max_value=20,
-            min_value=1,
-            value=10,
-        )
+
+        # Dropdown for model selection
+        selected_embed = st.sidebar.selectbox("Select Embedding:", embedding_list.keys())
+            
+        # num_web = st.number_input(
+        #     label="Enter number of web references to use",
+        #     max_value=20,
+        #     min_value=1,
+        #     value=10,
+        # )
 
         st.divider()
         st.sidebar.title("About")
@@ -79,52 +82,81 @@ def page_rag():
     st.header("Let me help you with your documents!!!")
     st.title("Content Generator with RAG")
 
-    # Dropdown for model selection
-    selected_model = st.selectbox("Select Model:", model_lists)
-
-    # Selection box for tasks
-    selected_task = st.selectbox("Select Task:", tasks)
-    
     # Blog post generator form
-    with st.form(key="generate_blog_post"):
-        keyword = st.text_input(label="Enter a keyword", placeholder="")
-
-        submitted = st.form_submit_button("Generate blog post")
+    keyword = st.text_input(label="Enter a keyword to search for", key="keyword", placeholder="")
 
     # Main input
     st.write("#### Add additional links:")
+
+    # Create two columns for the buttons
+    col1, col2 = st.columns([1, 1])
+
+    # Add buttons in each column
+    with col1:
+        st.button("+ Add More", on_click=add_input)
+
+    with col2:
+        st.button("Remove", on_click=lambda: st.session_state.additional_inputs.pop())
+
     # Existing dynamic input fields
     for i, input_val in enumerate(st.session_state.additional_inputs):
         st.session_state.additional_inputs[i] = st.text_input(f"Input {i + 1}", value=input_val, key=f"input_{i}")
 
-    # Button to add new input row (outside of the form)
-    st.button("+ Add More", on_click=add_input)
-
-    st.button("Remove", on_click=lambda: st.session_state.additional_inputs.pop())
 
     st.write("#### Add additional pdf files:")
-    st.file_uploader("Upload", type=["pdf"])
+    # Create a directory to save the uploaded files (if it doesn't exist)
+    os.makedirs("uploaded_files", exist_ok=True)
 
-    if submitted  and not openai_api_key:
-            st.info("Please enter your OpenAI API key", icon="ℹ️")
+    # Upload multiple PDF files
+    uploaded_files = st.file_uploader("Upload multiple text files", type=["pdf"], accept_multiple_files=True)
+    file_paths = []
+    if uploaded_files:
+        for uploaded_file in uploaded_files:
+            # Save each uploaded file to the 'uploaded_files' directory
+            file_path = os.path.join("uploaded_files", uploaded_file.name)
+            file_path = file_path.replace(" ", "_")
+            with open(file_path, "wb") as f:
+                f.write(uploaded_file.getbuffer())
+            file_paths.append(file_path)
+            # Display the saved file path
+            st.write(f"File saved at: {file_path}")
+
+    submitted = st.button('✨ **Generate vectorDB**', type='primary')
             
-    elif submitted and not keyword:
-            st.warning("Please enter a keyword", icon="⚠️")
+    if submitted and not keyword:
+        st.warning("Please enter a keyword", icon="⚠️")
             
     elif submitted:
-        creator = ContentCreator(num_web=num_web)
-        response = creator.create_blog_post(keyword=keyword, additional_links=
-            st.session_state.additional_inputs)
+        creator = VectorDB(num_web=10, embedding_name = selected_embed)
+        creator.create_vectorDB(keyword=keyword, 
+                    additional_links= st.session_state.additional_inputs,
+                    localfiles=file_paths)
 
-        if response is None or not response:
-            st.status("Generating ... ")    
-        elif isinstance(response, Exception):
-                st.warning("An error occured. Please try again!")
-                st.error(response, icon="🚨")
-        else:
-                st.write("### Generated blog post")
-                st.write(response)
-                st.snow()
+        st.success("VectorDB created successfully", icon="🎉")
 
-# if __name__ == "__main__":
-#     page_rag()
+    # add text box to retrieve the query
+    query = st.text_input("Enter a query to search for", key="query", placeholder="")
+    retrieve = st.button('✨ **Retrieve**', type='primary')
+
+    if retrieve and not query:
+        st.warning("Please enter a query", icon="⚠️")
+    elif retrieve:
+        creator = VectorDB(num_web=10, embedding_name = selected_embed)
+        creator.load_vectorDB(keyword)
+        response = creator.retrieve(query)
+        st.write("### Retrieved documents")
+        st.write(response)
+        st.snow()
+
+        # if response is None or not response:
+        #     st.status("Generating ... ")    
+        # elif isinstance(response, Exception):
+        #     st.warning("An error occured. Please try again!")
+        #     st.error(response, icon="🚨")
+        # else:
+        #     st.write("### Generated blog post")
+        #     st.write(response)
+        #     st.snow()
+
+if __name__ == "__main__":
+    page_rag()

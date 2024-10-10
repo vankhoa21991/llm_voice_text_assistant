@@ -1,5 +1,6 @@
 
-
+# Sample tasks
+tasks = ["Summarize", "Rephrase", "Fix Grammar", "Write Email", "Brainstorm", "Chat"]
 
 class Template:
     def __init__(self):
