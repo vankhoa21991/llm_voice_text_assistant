@@ -108,5 +108,5 @@ def chatbot():
     
 
 # # Run the interface
-# if __name__ == "__main__":
-#     chatbot()
+if __name__ == "__main__":
+    chatbot()
