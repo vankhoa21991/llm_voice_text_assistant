@@ -1,0 +1,12 @@
+LICENSE
+README.md
+setup.py
+VirAsst/RAG.py
+VirAsst/__init__.py
+VirAsst/vectorDB.py
+VirAsst.egg-info/PKG-INFO
+VirAsst.egg-info/SOURCES.txt
+VirAsst.egg-info/dependency_links.txt
+VirAsst.egg-info/entry_points.txt
+VirAsst.egg-info/requires.txt
+VirAsst.egg-info/top_level.txt

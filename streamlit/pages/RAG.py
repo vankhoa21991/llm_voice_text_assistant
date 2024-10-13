@@ -15,7 +15,7 @@ def page_rag():
     # Function to add a new input row
     def add_input():
         st.session_state.additional_inputs.append("")
-
+        
     with st.sidebar:
         st.sidebar.title("How to use")
         st.sidebar.markdown(
