@@ -102,7 +102,9 @@ async def create_vector_db(
     
     # Create VectorDB instance and process the data
     creator = VectorDB(num_web=10, embedding_name=selected_embed)
-    creator.create_vectorDB(keyword=keyword, additional_links=additional_links, localfiles=file_paths)
+    creator.create_vectorDB(keyword=keyword, 
+                            additional_links=additional_links, 
+                            localfiles=file_paths)
     
     return {"message": "VectorDB created successfully", "file_paths": file_paths}
 

@@ -23,10 +23,10 @@ curl -X POST "http://127.0.0.1:8091/upload-image" \
 -H "Content-Type: multipart/form-data" \
 -F "file=@data/img.png"
 
-curl -X POST "http://127.0.0.1:8000/create-vectordb/" \
+curl -X POST "http://127.0.0.1:8091/create-vectordb/" \
 -F "keyword=your_keyword_here" \
--F "additional_links=link1" \
--F "additional_links=link2" \
--F "uploaded_files=@/path/to/your/file1.pdf" \
--F "uploaded_files=@/path/to/your/file2.pdf" \
--F "selected_embed=your_embedding_name_here"
+-F "additional_links=https://www.w3schools.com/python/python_intro.asp" \
+-F "additional_links=https://www.w3schools.com/python/python_syntax.asp" \
+-F "uploaded_files=@data/paper.pdf" \
+-F "uploaded_files=@data/paper.pdf" \
+-F "selected_embed=all-MiniLM-L6-v2.F16"

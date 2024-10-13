@@ -20,7 +20,7 @@ embedding_list = {
      
      "all-MiniLM-L6-v2.F16": 
      {
-            "model_path": "models/all-MiniLM-L6-v2.F16.gguf",
+            "model_path": "../models/all-MiniLM-L6-v2.F16.gguf",
             "embedding": LlamaCppEmbeddings
         },
     "gpt-4o": OpenAIEmbeddings(model="gpt-4o"),
@@ -153,6 +153,7 @@ class VectorDB:
             print("VectorDB created successfully!")
 
         except Exception as e:
+            print(f"An error occurred while creating vectorDB: {e}")
             return e
         return
             
