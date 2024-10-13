@@ -1,11 +1,13 @@
+import os
+import io
+import requests
+from PIL import Image
 from fastapi import FastAPI, Request, UploadFile, File, Form
 from pydantic import BaseModel
 from typing import List, Optional
 from VirAsst.llm.llms import model_lists_image, model_lists_text, ModelHandler
 from VirAsst.template.templates import Template, tasks
-import io
-import requests
-from PIL import Image
+from VirAsst.vectorDB import VectorDB, embedding_list
 
 app = FastAPI()
 
@@ -80,3 +82,45 @@ async def clear_conversation():
 @app.get("/")
 async def root():
     return {"message": "Welcome to the Chatbot API!"}
+
+@app.post("/create-vectordb/")
+async def create_vector_db(
+    keyword: str = Form(...),
+    additional_links: List[str] = Form([]),
+    uploaded_files: List[UploadFile] = File([]),
+    selected_embed: str = Form("default_embedding")  # Choose a default embedding
+):
+    # Save uploaded files
+    file_paths = []
+    os.makedirs("uploaded_files", exist_ok=True)
+    for uploaded_file in uploaded_files:
+        file_path = os.path.join("uploaded_files", uploaded_file.filename)
+        file_path = file_path.replace(" ", "_")
+        with open(file_path, "wb") as f:
+            f.write(await uploaded_file.read())
+        file_paths.append(file_path)
+    
+    # Create VectorDB instance and process the data
+    creator = VectorDB(num_web=10, embedding_name=selected_embed)
+    creator.create_vectorDB(keyword=keyword, additional_links=additional_links, localfiles=file_paths)
+    
+    return {"message": "VectorDB created successfully", "file_paths": file_paths}
+
+
+@app.post("/retrieve-documents/")
+async def retrieve_documents(
+    keyword: str = Form(...),
+    query: str = Form(...),
+    selected_embed: str = Form("default_embedding")
+):
+    # Load and retrieve documents using VectorDB
+    creator = VectorDB(num_web=10, embedding_name=selected_embed)
+    creator.load_vectorDB(keyword)
+    response = creator.retrieve(query)
+    
+    return {"message": "Documents retrieved successfully", "response": response}
+
+
+@app.get("/get-embedding-list/")
+async def get_embedding_list():
+    return {"embeddings": list(embedding_list.keys())}

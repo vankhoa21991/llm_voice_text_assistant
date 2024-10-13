@@ -147,16 +147,6 @@ def page_rag():
         st.write("### Retrieved documents")
         st.write(response)
         st.snow()
-
-        # if response is None or not response:
-        #     st.status("Generating ... ")    
-        # elif isinstance(response, Exception):
-        #     st.warning("An error occured. Please try again!")
-        #     st.error(response, icon="🚨")
-        # else:
-        #     st.write("### Generated blog post")
-        #     st.write(response)
-        #     st.snow()
-
+        
 if __name__ == "__main__":
     page_rag()

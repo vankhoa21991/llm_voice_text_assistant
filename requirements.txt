@@ -1,9 +1,18 @@
 llama-cpp-python[server]
 gradio
 openai
-huggingface-cli
+# huggingface-cli
 huggingface_hub
 torch
 transformers
 nltk
 optimum
+streamlit
+beautifulsoup4
+langchain-community
+langchain_openai
+whisper-cpp-pybind
+python-ffmpeg
+pyaudio
+fastapi 
+uvicorn

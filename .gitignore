@@ -2,7 +2,7 @@ models
 .env
 venv/
 .idea/
-
+*.egg-info
 __pycache__/
 uploaded_files/
 vectorstore/

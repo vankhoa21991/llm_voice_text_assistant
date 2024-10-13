@@ -1,4 +1,4 @@
-curl -X POST "http://127.0.0.1:8000/chatbot" \
+curl -X POST "http://127.0.0.1:8091/chatbot" \
 -H "Content-Type: application/json" \
 -d '{
     "user_input": "Hello, what is machine learning?",
@@ -8,7 +8,7 @@ curl -X POST "http://127.0.0.1:8000/chatbot" \
     "image_url": null
 }'
 
-curl -X POST "http://127.0.0.1:8000/chatbot" \
+curl -X POST "http://127.0.0.1:8091/chatbot" \
 -H "Content-Type: application/json" \
 -d '{
     "user_input": "Hello, what is in this image?",
@@ -19,6 +19,14 @@ curl -X POST "http://127.0.0.1:8000/chatbot" \
 }'
 
 # upload image
-curl -X POST "http://127.0.0.1:8000/upload-image" \
+curl -X POST "http://127.0.0.1:8091/upload-image" \
 -H "Content-Type: multipart/form-data" \
 -F "file=@data/img.png"
+
+curl -X POST "http://127.0.0.1:8000/create-vectordb/" \
+-F "keyword=your_keyword_here" \
+-F "additional_links=link1" \
+-F "additional_links=link2" \
+-F "uploaded_files=@/path/to/your/file1.pdf" \
+-F "uploaded_files=@/path/to/your/file2.pdf" \
+-F "selected_embed=your_embedding_name_here"
