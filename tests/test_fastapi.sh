@@ -24,7 +24,7 @@ curl -X POST "http://127.0.0.1:8091/upload-image" \
 -F "file=@data/img.png"
 
 curl -X POST "http://127.0.0.1:8091/create-vectordb/" \
--F "keyword=your_keyword_here" \
+-F "keyword=paper" \
 -F "additional_links=https://www.w3schools.com/python/python_intro.asp" \
 -F "additional_links=https://www.w3schools.com/python/python_syntax.asp" \
 -F "uploaded_files=@data/paper.pdf" \

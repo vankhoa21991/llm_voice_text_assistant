@@ -1,29 +1,47 @@
 import streamlit as st
 import requests
-from VirAsst.llm.llms import model_lists_image, model_lists_text
-from VirAsst.template.templates import tasks
-import json
+import os
+from dotenv import load_dotenv
+load_dotenv()
 
 # FastAPI server URL (replace this with your actual FastAPI server URL if different)
-API_URL = "http://127.0.0.1:8091"
+API_URL = os.getenv("API_URL")
 
 def chatbot():
     st.title("Chatbot")
 
     with st.sidebar:
-        # a dropdown for model type
-        model_type = st.selectbox("Select Model Type:", ['text', 'image'])
+        model_type = st.selectbox("Select Model Type:", ["text", "image"])
 
-        if model_type == 'text':
-            model_lists = model_lists_text
+        model_list = requests.get(f"{API_URL}/get-model-list/{model_type}")
+
+        if model_list.status_code == 200:
+            model_data = model_list.json().get("models", [])
+            if isinstance(model_data, dict):
+                # If the response is a list of models, just use it directly
+                model_lists = model_data
+            else:
+                print("Unexpected response format. Expected a list.")
         else:
-            model_lists = model_lists_image
+            print(f"Failed to retrieve model list: {model_list.status_code}")
 
+        vectorstore_keywords = requests.get(f"{API_URL}/get-vectorstore/")
+        if vectorstore_keywords.status_code == 200:
+            vectorstore_keywords = vectorstore_keywords.json().get("vectorstore", "")
+            if isinstance(vectorstore_keywords, list):
+                vectorstore_keywords = [""] + vectorstore_keywords
+            else:
+                print("Unexpected response format. Expected a list.")
+        else:
+            print(f"Failed to retrieve vectorstore keyword: {vectorstore_keywords.status_code}")
+        
+
+        
         # Dropdown for model selection
         selected_model = st.sidebar.selectbox("Select Model:", model_lists.keys())
 
-        # Selection box for tasks
-        selected_task = st.sidebar.selectbox("Select Task:", tasks)
+        # Select vectorstore keyword
+        vectorstore_keyword = st.sidebar.selectbox("Select Vectorstore Keyword:", vectorstore_keywords)
 
         # Option to input image URL
         image_url = st.text_input("Enter Image URL:")
@@ -59,8 +77,8 @@ def chatbot():
                 "user_input": user_input,
                 "model_type": model_type,
                 "selected_model": selected_model,
-                "selected_task": selected_task,
-                "image_url": image_url
+                "image_url": image_url,
+                "vectorstore_keyword": vectorstore_keyword
             }
 
             # Send the POST request to FastAPI's /chatbot endpoint

@@ -2,12 +2,12 @@ import os
 import io
 import requests
 from PIL import Image
-from fastapi import FastAPI, Request, UploadFile, File, Form
+from fastapi import FastAPI, Request, UploadFile, File, Form, Query
 from pydantic import BaseModel
 from typing import List, Optional
 from VirAsst.llm.llms import model_lists_image, model_lists_text, ModelHandler
 from VirAsst.template.templates import Template, tasks
-from VirAsst.vectorDB import VectorDB, embedding_list
+from VirAsst.rag.vectorDB import VectorDB, embedding_list
 
 app = FastAPI()
 
@@ -18,8 +18,8 @@ class ChatRequest(BaseModel):
     user_input: str
     model_type: str
     selected_model: str
-    selected_task: str
     image_url: Optional[str] = None
+    vectorstore_keyword: Optional[str] = None
 
 class ChatResponse(BaseModel):
     user_input: str
@@ -32,8 +32,8 @@ async def chatbot(request: ChatRequest):
     user_input = request.user_input
     model_type = request.model_type
     selected_model = request.selected_model
-    selected_task = request.selected_task
     image_url = request.image_url
+    vectorstore_keyword = request.vectorstore_keyword
 
     # Initialize conversation if it doesn't exist
     if 'conversation' not in conversation_store:
@@ -42,14 +42,16 @@ async def chatbot(request: ChatRequest):
     # Add new user input to conversation history
     handler = ModelHandler(selected_model, model_type=model_type)
 
-    # Create a query using the Template based on the user's input and conversation history
-    query = Template().get_template(user_input, conversation_store['conversation'], selected_task)
-
-    print(f"Query: {query}")
+    
+    print(f"User input: {user_input}")
     print(f"Image URL: {image_url}")
+    print(f"Vectorstore keyword: {vectorstore_keyword}")
     # Generate a response using the model handler
-    response = handler.model.generate(message=query, image_url=image_url)
-
+    response = handler.generate(user_input=user_input,
+                                previous_conversation=conversation_store['conversation'],
+                                      image_url=image_url, 
+                                      vectorstore_keyword=vectorstore_keyword)
+    print(f"Bot response: {response}")
     # Save the conversation in the in-memory store
     conversation_store['conversation'].append({
         'user': user_input,
@@ -101,7 +103,8 @@ async def create_vector_db(
         file_paths.append(file_path)
     
     # Create VectorDB instance and process the data
-    creator = VectorDB(num_web=10, embedding_name=selected_embed)
+    creator = VectorDB(num_web=10)
+    creator.get_embedding(selected_embed)
     creator.create_vectorDB(keyword=keyword, 
                             additional_links=additional_links, 
                             localfiles=file_paths)
@@ -126,3 +129,26 @@ async def retrieve_documents(
 @app.get("/get-embedding-list/")
 async def get_embedding_list():
     return {"embeddings": list(embedding_list.keys())}
+
+@app.get("/get-model-list/{model_type}")
+async def get_model_list(model_type: str):
+    if model_type == "image":
+        return {"models": model_lists_image}
+    elif model_type == "text":
+        return {"models": model_lists_text}
+    else:
+        return {"message": "Invalid model type. Please choose 'image' or 'text'."}
+
+@app.get("/get-task-list/")
+async def get_task_list():
+    return {"tasks": tasks}
+
+@app.get("/get-vectorstore/")
+async def get_vectorstore():
+    creator = VectorDB()
+    # find all folder in vectorstore
+    creator.vector_store_path = "vectorstore"
+    vectorstore = os.listdir(creator.vector_store_path)
+
+    return {"message": "Vectorstore retrieved successfully", 
+            "vectorstore": vectorstore}

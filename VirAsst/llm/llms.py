@@ -12,7 +12,8 @@ from llama_cpp.llama_chat_format import (
     Llava15ChatHandler,
     Llava16ChatHandler,
 )
-
+from VirAsst.template.templates import Template
+from VirAsst.rag.vectorDB import VectorDB
 import json
 from pathlib import Path
 
@@ -81,7 +82,7 @@ class ModelLlamaCppHF:
         self.llm = Llama.from_pretrained(
             repo_id=self.repo_id,
             filename=self.filename,
-            n_ctx=2048,
+            n_ctx=10000,
         )
 
     def is_online(self) -> bool:
@@ -201,6 +202,26 @@ class ModelHandler():
             raise ValueError(f"Model name {self.model_name} not supported.")
         self.model.get_llm()
 
+    def generate(self, previous_conversation, user_input, vectorstore_keyword="", **kwargs):
+        if vectorstore_keyword != "":
+            print(vectorstore_keyword)
+            creator = VectorDB()
+            creator.get_embedding(model_name="all-MiniLM-L6-v2.F16")
+            creator.load_vectorDB(vectorstore_keyword)
+
+            docs = creator.retrieve(user_input)
+            context = ""
+            for i in docs:
+                context += i.page_content + " "
+            contexto = context.replace("\n", "")
+            query = Template().get_template(contexto, previous_conversation, context=contexto)
+            return self.model.generate(query, **kwargs)
+        else:
+            # Create a query using the Template based on the user's input and conversation history
+            query = Template().get_template(user_input, previous_conversation)
+
+            return self.model.generate(query, **kwargs)
+
 if __name__=="__main__":
     # model = ModelOpenAI(**OpenAI_MODELS["gpt-4o"])
     # model.get_llm()
@@ -210,8 +231,20 @@ if __name__=="__main__":
     # model.get_llm()
     # print(model.generate("Hello, how are you?"))
 
-    handler = ModelHandler("gpt-4o")
-    print(handler.model.generate("Hello, how are you?"))
+    # handler = ModelHandler("gpt-4o")
+    # print(handler.model.generate("Hello, how are you?"))
 
-    model = ModelHandler("Llama-3.2-1B-Instruct-Q4_K_M-GGUF")
-    print(model.model.generate("Hello, how are you?"))
+    # model = ModelHandler("Llama-3.2-1B-Instruct-Q4_K_M-GGUF")
+    # print(model.model.generate("Hello, how are you?"))
+
+    handler = ModelHandler("gpt-4o", model_type="text")
+    user_input = "Hello, how are you?"
+    conversation_store = {"conversation": []}
+    image_url = ""
+    vectorstore_keyword = "paper"
+
+    response = handler.generate(user_input=user_input,
+                                previous_conversation=conversation_store['conversation'],
+                                      image_url=image_url, 
+                                      vectorstore_keyword=vectorstore_keyword)
+    print(response)

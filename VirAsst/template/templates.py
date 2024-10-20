@@ -26,8 +26,12 @@ class Template:
         return prompt
 
 
-    def get_template(self, user_input: str, previous_conversation: list, task: str):
-        context = "\n".join([f"User: {msg['user']}\nBot: {msg['bot']}" for msg in previous_conversation])
+    def get_template(self, user_input: str, previous_conversation: list, context: str=None):
+        previous_conversation = "\n".join([f"User: {msg['user']}\nBot: {msg['bot']}" for msg in previous_conversation])
 
-        query = self.get_prompt_from_task(task, user_input)
-        return f"Context: {context}\n\nDo the following task: {query}"
+        # query = self.get_prompt_from_task(task, user_input)
+        if context:
+            query = f"Given this context: {context}. \n\nPrevious conversation: {previous_conversation}\n\nUser give you this request: {user_input}. Please respond."
+        else:
+            query = f"Previous conversation: {previous_conversation}\n\nUser give you this request: {user_input}. Please respond."
+        return query

@@ -18,3 +18,9 @@ fastapi
 uvicorn
 duckduckgo-search
 pypdf
+bcrypt
+pyjwt
+alembic>=1.9.1
+SQLAlchemy
+psycopg2-binary==2.9.5
+email-validator>=1.0.3

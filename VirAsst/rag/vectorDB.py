@@ -20,7 +20,7 @@ embedding_list = {
      
      "all-MiniLM-L6-v2.F16": 
      {
-            "model_path": "../models/all-MiniLM-L6-v2.F16.gguf",
+            "model_path": "models/all-MiniLM-L6-v2.F16.gguf",
             "embedding": LlamaCppEmbeddings
         },
     "gpt-4o": OpenAIEmbeddings(model="gpt-4o"),
@@ -39,11 +39,10 @@ class EmbeddingHandler:
             return embedding_list[self.model_name]
 
 class VectorDB:
-    def __init__(self, num_web, embedding_name, **kwargs):
+    def __init__(self, num_web=10, **kwargs):
             self.num_web = num_web
             self.template = Template()
             self.get_splitter()
-            self.get_embedding(embedding_name)
             self.vector_store_path = kwargs.get("vector_store_path", "vectorstore")
 
     def parse_links(self, search_results: str):
@@ -183,7 +182,9 @@ def format_docs(docs):
     return "\n\n".join(doc.page_content for doc in docs)
 
 if __name__ == "__main__":
-    creator = VectorDB(num_web=10, embedding_name="all-MiniLM-L6-v2.F16")
+    creator = VectorDB()
+    creator.get_embedding(model_name="all-MiniLM-L6-v2.F16")
+
 
     # if os.path.exists("./vectorstore/python"):
     #     print("Loading vectorDB for Python ...")
