@@ -5,9 +5,14 @@ from PIL import Image
 from fastapi import FastAPI, Request, UploadFile, File, Form, Query
 from pydantic import BaseModel
 from typing import List, Optional
-from VirAsst.llm.llms import model_lists_image, model_lists_text, ModelHandler
-from VirAsst.template.templates import Template, tasks
-from VirAsst.rag.vectorDB import VectorDB, embedding_list
+from VirAsst.llm.llms import ModelHandler
+from VirAsst.rag.vectorDB import VectorDB
+from VirAsst.voice.whisper import ModelHandler as VoiceModelHandler
+from VirAsst.modules import model_lists_image, model_lists_text, model_lists_voice, embedding_list
+import pyaudio
+from ffmpeg import FFmpeg
+from fastapi.responses import JSONResponse
+import datetime
 
 app = FastAPI()
 
@@ -24,6 +29,13 @@ class ChatRequest(BaseModel):
 class ChatResponse(BaseModel):
     user_input: str
     bot_response: str
+
+# Model for response
+class VoiceResponse(BaseModel):
+    status: str
+    message: str
+    transcribed_text: Optional[str] = None
+    processing_time: Optional[str] = None
 
 @app.post("/chatbot", response_model=ChatResponse)
 async def chatbot(request: ChatRequest):
@@ -119,7 +131,8 @@ async def retrieve_documents(
     selected_embed: str = Form("default_embedding")
 ):
     # Load and retrieve documents using VectorDB
-    creator = VectorDB(num_web=10, embedding_name=selected_embed)
+    creator = VectorDB(num_web=10)
+    creator.get_embedding(selected_embed)
     creator.load_vectorDB(keyword)
     response = creator.retrieve(query)
     
@@ -139,10 +152,6 @@ async def get_model_list(model_type: str):
     else:
         return {"message": "Invalid model type. Please choose 'image' or 'text'."}
 
-@app.get("/get-task-list/")
-async def get_task_list():
-    return {"tasks": tasks}
-
 @app.get("/get-vectorstore/")
 async def get_vectorstore():
     creator = VectorDB()
@@ -152,3 +161,63 @@ async def get_vectorstore():
 
     return {"message": "Vectorstore retrieved successfully", 
             "vectorstore": vectorstore}
+
+@app.get("/get-voice-model-list/")
+async def get_voice_model_list():
+    return {"models": model_lists_voice}
+
+# Function to convert MP3 to WAV using ffmpeg
+def ffmpegconvert(file_path):
+    ffmpeg = FFmpeg().input(file_path).output("temp.wav", {
+        "codec:a": "pcm_s16le",
+        "ar": 16000,
+        "ac": 1
+    })
+    ffmpeg.execute()
+
+# Route to transcribe uploaded audio
+@app.post("/transcribe/", response_model=VoiceResponse)
+async def transcribe_audio(
+    file: UploadFile = File(...),
+    model_name: str = Form(...),
+):
+    file_location = f"temp_{file.filename}"
+    
+    # Save the uploaded file
+    with open(file_location, "wb") as f:
+        f.write(file.file.read())
+    
+    try:
+        # Handle MP3 files: convert to WAV
+        if 'mp3' in file.filename:
+            ffmpegconvert(file_location)
+            file_location = "temp.wav"
+
+        # Initialize the model handler (replace with actual handler)
+        handler_voice = VoiceModelHandler(model_name)
+
+        # Start transcription process
+        start = datetime.datetime.now()
+        result = handler_voice.generate(file_location)
+        delta = datetime.datetime.now() - start
+        
+        return JSONResponse({
+            "status": "success",
+            "message": "Audio transcribed successfully!",
+            "transcribed_text": result,
+            "processing_time": str(delta)
+        })
+
+    except Exception as e:
+        return JSONResponse({
+            "status": "error",
+            "message": f"An error occurred: {str(e)}"
+        })
+
+    finally:
+        # Clean up temporary files
+        if os.path.exists(file_location):
+            os.remove(file_location)
+        if os.path.exists("temp.wav"):
+            os.remove("temp.wav")
+

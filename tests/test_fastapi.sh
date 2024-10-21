@@ -30,3 +30,7 @@ curl -X POST "http://127.0.0.1:8091/create-vectordb/" \
 -F "uploaded_files=@data/paper.pdf" \
 -F "uploaded_files=@data/paper.pdf" \
 -F "selected_embed=all-MiniLM-L6-v2.F16"
+
+curl -X POST "http://localhost:8091/transcribe/" \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  -d "file_path=data/output.wav"

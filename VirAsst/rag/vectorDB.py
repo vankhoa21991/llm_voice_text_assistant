@@ -15,17 +15,8 @@ from langchain_community.document_loaders import TextLoader, PyPDFLoader
 from langchain.embeddings import HuggingFaceEmbeddings
 
 from VirAsst.template.templates import Template
+from VirAsst.modules import embedding_list
 
-embedding_list = {
-     
-     "all-MiniLM-L6-v2.F16": 
-     {
-            "model_path": "models/all-MiniLM-L6-v2.F16.gguf",
-            "embedding": LlamaCppEmbeddings
-        },
-    "gpt-4o": OpenAIEmbeddings(model="gpt-4o"),
-     "gpt-4": OpenAIEmbeddings(model="gpt-4"),
-}
 
 class EmbeddingHandler:
     def __init__(self, model_name):
@@ -34,9 +25,9 @@ class EmbeddingHandler:
 
     def get_embedding(self):
         if self.model_name == "all-MiniLM-L6-v2.F16":
-            return embedding_list[self.model_name]["embedding"](model_path=embedding_list[self.model_name]["model_path"])
+            return LlamaCppEmbeddings(model_path=embedding_list[self.model_name]["model_path"])
         elif 'gpt' in self.model_name:
-            return embedding_list[self.model_name]
+            return OpenAIEmbeddings(model=self.model_name)
 
 class VectorDB:
     def __init__(self, num_web=10, **kwargs):

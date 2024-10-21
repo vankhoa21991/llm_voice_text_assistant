@@ -1,7 +1,7 @@
 FROM tiangolo/uvicorn-gunicorn:python3.9
 
 
-RUN apt-get install portaudio19-dev
+RUN apt-get update && apt-get install -y portaudio19-dev
 
 RUN mkdir /fastapi
 
@@ -15,4 +15,4 @@ COPY . /fastapi
 
 EXPOSE 8000
 
-CMD ["uvicorn", "server:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8091"]

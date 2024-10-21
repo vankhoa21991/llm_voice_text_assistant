@@ -10,11 +10,12 @@ import base64
 import pyaudio
 import asyncio
 
+from dotenv import load_dotenv
+load_dotenv()
+import requests
+import os
 
-@st.cache_resource 
-def create_whisper():   
-    whisper = Whisper("models/ggml-tiny.en-q8_0.bin")
-    return whisper
+API_URL = os.getenv("API_URL")
 
 @st.cache_resource
 def ffmpegconvert(x):
@@ -31,7 +32,6 @@ if "audiofile" not in st.session_state:
 
 def diary():
     # st.set_page_config(layout="wide", page_title="AI Whisper Transcriber")
-    whisper = create_whisper()
     st.write("# 🎙️✍️ Talk to your AI assistance!!\n\n\n")
     st.markdown('\n---\n', unsafe_allow_html=True)
     st.sidebar.write("## Upload an audio file or record :gear:")
@@ -50,6 +50,21 @@ def diary():
     # Upload the audio file
     file1 = st.sidebar.file_uploader("Upload Audio file", type=["mp3", "wav"], accept_multiple_files=False)
     gentimetext = st.sidebar.empty()
+
+    model_list = requests.get(f"{API_URL}/get-voice-model-list")
+
+    if model_list.status_code == 200:
+        model_data = model_list.json().get("models", [])
+        if isinstance(model_data, dict):
+            # If the response is a list of models, just use it directly
+            model_lists = model_data
+        else:
+            print("Unexpected response format. Expected a list.")
+    else:
+        print(f"Failed to retrieve model list: {model_list.status_code}")
+
+    # Dropdown for model selection
+    selected_model = st.sidebar.selectbox("Select Model:", model_lists)
 
     # Session state
     if 'text' not in st.session_state:
@@ -124,52 +139,24 @@ def diary():
 
     if transcribe_btn and file1:
         with st.spinner("Transcribing..."):
-            print(file1.name)
-            if 'mp3' in file1.name:
-                print('The file is an MP3: starting ffmpeg')
-                message1.info(' Your Audio file is a MP3: we are going to convert it!', icon='⏳')
-                out = ffmpegconvert(file1.name)
-                message11.success(' Audio file correctly encoded into WAV 16k Mono', icon='✅')
-                start = datetime.datetime.now()
-                print('Start transcribing...')
-                whisper.transcribe('temp.wav', 
-                                diarize=False,
-                                print_progress=False) 
-                delta = datetime.datetime.now() - start
-                st.session_state.gentime = f"**:green[{str(delta)}]**"
-                gentimetext.write(st.session_state.gentime)
-                message2.success(' Audio transcribed by AI', icon='✅')
-                print('removing temp files...')
-                try:
-                    os.remove('temp.wav')
-                except:
-                    pass    
-                print('writing text file out...')
-                result = whisper.output('AITranscribed', output_txt=True, output_srt=True)
-                st.toast('Output files **AITranscribed** saved!', icon='🎉')
-                time.sleep(1.2)
-                st.toast('**text** file saved', icon='📃')
-                time.sleep(1.2)
-                st.toast('**subtitles** file saved', icon='🪩')
-                transcribed.write(result)
-                print('completed')
+            # Upload the file to FastAPI for transcription
+            files = {"file": file1.getvalue()}  # Convert file to bytes to send in request
+            data = {"model_name": selected_model}
 
-            else:             
-                start = datetime.datetime.now()
-                whisper.transcribe(file1.name, 
-                                diarize=False,
-                                print_progress=False)
-                delta = datetime.datetime.now() - start
-                st.session_state.gentime = f"**:green[{str(delta)}]**" 
-                gentimetext.write(st.session_state.gentime)
-                message2.success(' Audio transcribed by AI', icon='✅')                
-                result = whisper.output('AITranscribed', output_txt=True, output_srt=True)
-                st.toast('Output files **AITranscribed** saved!', icon='🎉')
-                time.sleep(1.2)
-                st.toast('**text** file saved', icon='📃')
-                time.sleep(1.2)
-                st.toast('**subtitles** file saved', icon='🪩')
-                transcribed.write(result)
+            try:
+                response = requests.post(f"{API_URL}/transcribe/",
+                                         files=files, data=data)
+                result = response.json()
+                
+                if response.status_code == 200:
+                    message2.success(' Audio transcribed by AI', icon='✅')
+                    transcribed.write(result["transcribed_text"])
+                    st.session_state.gentime = f"**:green[{result['processing_time']}]**"
+                    gentimetext.write(st.session_state.gentime)
+                else:
+                    message3.warning(result.get("message", "Error during transcription"), icon='⚠️')
+            except Exception as e:
+                message3.error(f"An error occurred: {str(e)}", icon='❌')
     
 
     if not file1:
