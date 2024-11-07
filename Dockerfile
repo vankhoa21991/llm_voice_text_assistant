@@ -9,10 +9,10 @@ COPY requirements.txt /fastapi
 
 WORKDIR /fastapi
 
-RUN pip install -r requirements.txt
+RUN pip install -vr requirements.txt
 
 COPY . /fastapi
 
-EXPOSE 8000
+EXPOSE 8091
 
 CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8091"]

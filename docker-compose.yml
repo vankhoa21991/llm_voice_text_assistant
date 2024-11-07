@@ -1,4 +1,4 @@
-version: "3.10"
+version: "3.9"
 
 services:
   db:
@@ -6,9 +6,9 @@ services:
     container_name: fastapiapp_demodb
     restart: always
     environment:
-      - POSTGRES_DB=postgres
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=$POSTGRES_DB
+      - POSTGRES_USER=$POSTGRES_USER
+      - POSTGRES_PASSWORD=$POSTGRES_PASSWORD
     networks:
       - fastapiappnetwork
 
@@ -18,11 +18,17 @@ services:
     ports:
       - 8091:8091
     volumes:
-      - .:/home
+      - .:/fastapi
     depends_on:
       - db
     networks:
       - fastapiappnetwork
+    environment:
+      - POSTGRES_DB=$POSTGRES_DB
+      - POSTGRES_USER=$POSTGRES_USER
+      - POSTGRES_HOST=$POSTGRES_HOST
+      - POSTGRES_PORT=$POSTGRES_PORT
+      - POSTGRES_PASSWORD=$POSTGRES_PASSWORD
 
 
 networks:

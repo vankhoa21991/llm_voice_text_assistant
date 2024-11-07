@@ -9,7 +9,6 @@ from VirAsst.llm.llms import ModelHandler
 from VirAsst.rag.vectorDB import VectorDB
 from VirAsst.voice.whisper import ModelHandler as VoiceModelHandler
 from VirAsst.modules import model_lists_image, model_lists_text, model_lists_voice, embedding_list
-import pyaudio
 from ffmpeg import FFmpeg
 from fastapi.responses import JSONResponse
 import datetime

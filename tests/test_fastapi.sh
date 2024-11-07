@@ -34,3 +34,8 @@ curl -X POST "http://127.0.0.1:8091/create-vectordb/" \
 curl -X POST "http://localhost:8091/transcribe/" \
   -H "Content-Type: application/x-www-form-urlencoded" \
   -d "file_path=data/output.wav"
+
+curl -X POST "http://localhost:8091/transcribe/" \
+  -H "Content-Type: multipart/form-data" \
+  -F "file=@data/output.wav" \
+  -F "model_name=ggml-model-whisper-tiny.en-q8_0" 
